@@ -17,8 +17,10 @@ class CompBezierShape(Spline):
         self.x_coords, self.y_coords = self.spline.cp.transpose().tolist()
         self.graph = [self.spline.graph_cp(), self.spline.graph(0.01)]
 
-    def append_section(self):
-        print("append")
+    def append_point(self, point):
+        super().append_point(point)
+        self.spline = CompositeBezier(np.array([self.x_coords, self.y_coords]).transpose(), self.order)
+        self.graph = [[self.x_coords, self.y_coords], self.spline.graph(0.01)]
 
 
 class CompQuadBezierShape(CompBezierShape):
@@ -37,7 +39,8 @@ class CompQuadBezierShape(CompBezierShape):
         self.graph[1] = self.spline.graph(0.01)
 
     def append_point(self, point):
-        super().append_point(point)
+        self.x_coords.append(point[0])
+        self.y_coords.append(point[1])
         self.spline = CompositeQuadraticBezier(np.array([self.x_coords, self.y_coords]).transpose())
         self.graph = [[self.x_coords, self.y_coords], self.spline.graph(0.01)]
 

@@ -40,6 +40,17 @@ class CanvasInteractive(FigureCanvas):
     def update_canvas(self, i):
         return *self.plots,
 
+    def tilt_shape(self, shape_index):
+        shape_index = self.standardize_index(shape_index, self.shapes)
+        plots_affected = [i for i in range(len(self.plot2shape_indices)) if self.plot2shape_indices[i] == shape_index]
+
+        for plot_index in plots_affected:
+            i = plot_index - plots_affected[0]
+            x_data = self.shapes[shape_index].graph[i][0]
+            y_data = self.shapes[shape_index].graph[i][1]
+            self.plots[plot_index].set_xdata(x_data)
+            self.plots[plot_index].set_ydata(y_data)
+
     def resume_interaction(self):
         self.button_press_connection = self.mpl_connect("button_press_event", self.button_press_callback)
         self.motion_connection = self.mpl_connect('motion_notify_event', self.mouse_move_callback)
@@ -56,17 +67,6 @@ class CanvasInteractive(FigureCanvas):
     def resize_axes(self, xl, xr, yd, yu):
         self.ax.set_xlim(xl, xr)
         self.ax.set_ylim(yd, yu)
-
-    def tilt_shape(self, shape_index):
-        shape_index = self.standardize_index(shape_index, self.shapes)
-        plots_affected = [i for i in range(len(self.plot2shape_indices)) if self.plot2shape_indices[i] == shape_index]
-
-        for plot_index in plots_affected:
-            i = plot_index - plots_affected[0]
-            x_data = self.shapes[shape_index].graph[i][0]
-            y_data = self.shapes[shape_index].graph[i][1]
-            self.plots[plot_index].set_xdata(x_data)
-            self.plots[plot_index].set_ydata(y_data)
 
     def update_shape_point(self, point):
         shape_index = self.plot2shape_indices[self.plot_selected]
@@ -114,48 +114,18 @@ class CanvasInteractive(FigureCanvas):
             self.plots[-1].set_color(shape.color[i])
             self.plot2shape_indices.append(len(self.shapes) - 1)
 
-    def draw_point(self, for_construction=False):
-        self.points_appended += 1
-        self.add_shape(Point(self, .5, .5, "blue"), clickable=[True], visible=[True])
-        self.plot_selected = len(self.plots) - 1
-        self.point_selected = 0
-        self.plots_visible.append(False)
-        self.plots_clickable[-1] = False
-        self.plots[-1].set_visible(False)
-
     def draw_shape(self, shape):
         self.new_shape = shape
         self.points_appended = 0
-        if shape == "point":
-            self.draw_point()
-        else:
-            self.draw_point(for_construction=True)
 
-    def remove_shape(self, i):
-        if i < 0:
-            i += len(self.shapes)
-        indices = [j for j in range(len(self.plot2shape_indices)) if i == self.plot2shape_indices[j]]
-        del self.shapes[i]
-        for j in indices:
-            del self.plots[j]
-            del self.plots_clickable[j]
-            del self.plots_visible[j]
-            del self.plot2shape_indices[j]
-        for j in range(len(self.plot2shape_indices)):
-            if self.plot2shape_indices[j] > i:
-                self.plot2shape_indices[j] -= len(indices)
-        self.draw()
+    def draw_point(self, x, y):
+        self.add_shape(Point(self, x, y, "blue"), clickable=[True], visible=[True])
+        self.points_appended += 1
 
-    def toggle_visibility(self, plot_ind):
-        self.plots_clickable[plot_ind] = not self.plots_clickable[plot_ind]
-        self.plots_visible[plot_ind] = not self.plots_visible[plot_ind]
-        self.plots[plot_ind].set_visible(not self.plots[plot_ind].get_visible())
-
-    def load_image(self, filename):
-        img = mpimg.imread(filename)
-        (height, width, _) = img.shape
-        self.ax.imshow(img)
-        self.resize_axes(0, width, height, 0.)
+    def append_point_to_shape(self, shape_index, point):
+        self.shapes[shape_index].append_point(point)
+        self.tilt_shape(shape_index)
+        self.points_appended += 1
 
     def line_from_points(self, point_id_1, point_id_2, for_polyline=False):
 
@@ -185,19 +155,44 @@ class CanvasInteractive(FigureCanvas):
         if self.new_shape == "bezier":
             self.add_shape(BezierShape(self, cp_x, cp_y, "blue", "grey"), clickable=[True, False],
                            visible=[True, True])
-        if self.new_shape == "comp_quad_bezier":
-            self.add_shape(CompQuadBezierShape(self, cp_x, cp_y, "blue", "grey"), clickable=[True, False], visible=[True, True])
-
-    def append_point_to_shape(self, shape_index, point):
-        self.shapes[shape_index].append_point(point)
-        self.tilt_shape(shape_index)
-        self.remove_shape(-1)
+        elif self.new_shape == "comp_quad_bezier":
+            self.add_shape(CompQuadBezierShape(self, cp_x, cp_y, "blue", "grey"), clickable=[True, False],
+                           visible=[True, True])
+        elif self.new_shape == "comp_cub_bezier":
+            self.add_shape(CompCubBezierShape(self, cp_x, cp_y, "blue", "grey"), clickable=[True, False],
+                           visible=[True, True])
 
     def complete_shape_addition(self):
         self.points_appended = 0
         self.new_shape = None
         self.point_selected = None
         self.plot_selected = None
+
+    def remove_shape(self, i):
+        if i < 0:
+            i += len(self.shapes)
+        indices = [j for j in range(len(self.plot2shape_indices)) if i == self.plot2shape_indices[j]]
+        del self.shapes[i]
+        for j in indices:
+            del self.plots[j]
+            del self.plots_clickable[j]
+            del self.plots_visible[j]
+            del self.plot2shape_indices[j]
+        for j in range(len(self.plot2shape_indices)):
+            if self.plot2shape_indices[j] > i:
+                self.plot2shape_indices[j] -= len(indices)
+        self.draw()
+
+    def toggle_visibility(self, plot_ind):
+        self.plots_clickable[plot_ind] = not self.plots_clickable[plot_ind]
+        self.plots_visible[plot_ind] = not self.plots_visible[plot_ind]
+        self.plots[plot_ind].set_visible(not self.plots[plot_ind].get_visible())
+
+    def load_image(self, filename):
+        img = mpimg.imread(filename)
+        (height, width, _) = img.shape
+        self.ax.imshow(img)
+        self.resize_axes(0, width, height, 0.)
 
     @staticmethod
     def standardize_index(index, mother_list):
@@ -209,67 +204,39 @@ class CanvasInteractive(FigureCanvas):
     # -- Callbacks -----------------------------------------------------------------------------------------------------
     def button_press_callback(self, event):
         ix, iy = event.xdata, event.ydata
-        if event.dblclick:
-            if self.new_shape == "point":
-                self.complete_shape_addition()
+        if event.dblclick and self.new_shape:
+            if self.points_appended == 0:
+                self.draw_point(ix, iy)
+                if self.new_shape == "point":
+                    self.complete_shape_addition()
+            elif self.points_appended == 1:
+                self.draw_point(ix, iy)
+                shape_is_line = self.new_shape == "line"
+                self.line_from_points(-2, -1, not shape_is_line)
+                if shape_is_line:
+                    self.complete_shape_addition()
             else:
-                if self.points_appended == 1:
-                    self.draw_point(for_construction=True)
-                elif self.points_appended == 2:
-                    if self.new_shape == "line":
-                        self.line_from_points(-1, -2)
-                        self.complete_shape_addition()
-                    else:
-                        self.line_from_points(-2, -1, for_polyline=True)
-                        self.draw_point(for_construction=True)
-                else:
-                    if self.new_shape == "polyline":
-                        self.append_point_to_shape(-2, [ix, iy])
-                        self.draw_point(for_construction=True)
-                    else:
-                        if self.points_appended == 3:
-                            if self.new_shape == "comp_quad_bezier" or self.new_shape == "bezier":
-                                self.append_point_to_shape(-2, [ix, iy])
-                                self.spline_from_polyline(-1)
-                                self.draw_point(for_construction=True)
-                            else:
-                                self.append_point_to_shape(-2, [ix, iy])
-                                self.draw_point(for_construction=True)
-                        else:
-                            if self.new_shape == "bezier":
-                                self.append_point_to_shape(-2, [ix, iy])
-                                self.draw_point(for_construction=True)
-                            elif self.new_shape == "comp_quad_bezier":
-                                self.append_point_to_shape(-2, [ix, iy])
-                                self.draw_point(for_construction=True)
-                            elif self.new_shape == "comp_cub_bezier":
-                                self.append_point_to_shape(-2, [ix, iy])
-                                self.draw_point(for_construction=True)
-        elif event.button == 1:
-            if not self.new_shape:
-                self.pressed = True
-                self.detect_point([ix, iy])
-                if self.point_selected is not None:
-                    self.update_shape_point([ix, iy])
+                self.append_point_to_shape(-1, [ix, iy])
+                if self.points_appended == 3 and (self.new_shape == "bezier" or self.new_shape == "comp_quad_bezier"):
+                    self.spline_from_polyline(-1)
+                if self.points_appended == 4 and self.new_shape == "comp_cub_bezier":
+                    self.spline_from_polyline(-1)
+        if event.button == 1:
+            self.pressed = True
+            self.detect_point([ix, iy])
+            if self.point_selected is not None:
+                self.update_shape_point([ix, iy])
         elif event.button == 3:
             if self.new_shape:
-                self.remove_shape(-1)
                 self.complete_shape_addition()
 
     def mouse_move_callback(self, event):
 
-        def move_point():
-            if ix is not None and iy is not None:
-                self.update_shape_point([ix, iy])
-
         ix, iy = event.xdata, event.ydata
 
-        if self.new_shape:
-            if self.plots_visible[-1] is False:
-                self.toggle_visibility(-1)
-            move_point()
-        elif self.pressed and self.point_selected is not None:
-            move_point()
+        if self.pressed and self.point_selected is not None:
+            if ix is not None and iy is not None:
+                self.update_shape_point([ix, iy])
 
     def button_release_callback(self, event):
         self.pressed = False
