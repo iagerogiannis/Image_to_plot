@@ -59,3 +59,21 @@ class CompCubBezierShape(CompBezierShape):
         self.x_coords.append(point[0])
         self.y_coords.append(point[1])
         super().append_point(point)
+
+    def modify_point(self, index, point, called_by_recursion=False, tangent=False):
+        if tangent and (index % 3 != 0 and index != 1 and index != -1 and index != len(self.x_coords) - 2):
+            j = 2 * (index % 3) - 3
+            p0 = [self.x_coords[index + j], self.y_coords[index + j]]
+            p1 = [self.x_coords[index], self.y_coords[index]]
+            line = StraightLine([[0., p0], [1., p1]])
+            a = line.c[0][1]
+            b = line.c[0][0]
+            c = line.c[1][1]
+            d = line.c[1][0]
+            x0 = point[0]
+            y0 = point[1]
+            t0 = (a * (x0 - b) + c * (y0 - d)) / (a ** 2 + c ** 2)
+            point_perp = line.point_t(t0)
+            super().modify_point(index, point_perp, called_by_recursion)
+        else:
+            super().modify_point(index, point, called_by_recursion)

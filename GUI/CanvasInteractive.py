@@ -27,6 +27,7 @@ class CanvasInteractive(FigureCanvas):
         self.new_shape = None
         self.points_appended = 0
         self.dbl_click = False
+        self.tangent = False
 
         self.button_press_connection = self.mpl_connect("button_press_event", self.button_press_callback)
         self.motion_connection = self.mpl_connect('motion_notify_event', self.mouse_move_callback)
@@ -71,7 +72,10 @@ class CanvasInteractive(FigureCanvas):
 
     def update_shape_point(self, point):
         shape_index = self.plot2shape_indices[self.plot_selected]
-        self.shapes[shape_index].modify_point(self.point_selected, point)
+        if type(self.shapes[shape_index]) == CompCubBezierShape:
+            self.shapes[shape_index].modify_point(self.point_selected, point, tangent=self.tangent)
+        else:
+            self.shapes[shape_index].modify_point(self.point_selected, point)
         self.tilt_shape(shape_index)
 
     def detect_point(self, point, radius=0.015):
@@ -194,6 +198,12 @@ class CanvasInteractive(FigureCanvas):
         (height, width, _) = img.shape
         self.ax.imshow(img)
         self.resize_axes(0, width, height, 0.)
+
+    def set_tangent(self):
+        self.tangent = True
+
+    def unset_tangent(self):
+        self.tangent = False
 
     @staticmethod
     def standardize_index(index, mother_list):

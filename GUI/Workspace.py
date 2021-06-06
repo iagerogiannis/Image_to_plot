@@ -1,5 +1,7 @@
 from PyQt5.QtWidgets import QHBoxLayout, QWidget
+from PyQt5.QtCore import Qt
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
+
 
 from GUI.WidgetContainer import *
 from GUI.Toolbar import Toolbar
@@ -65,3 +67,11 @@ class Workspace(QWidget):
 
     def home_callback(self):
         self.canvas.draw()
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Shift:
+            self.canvas.set_tangent()
+
+    def keyReleaseEvent(self, event):
+        if event.key() == Qt.Key_Shift:
+            self.canvas.unset_tangent()
