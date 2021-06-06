@@ -26,6 +26,7 @@ class CanvasInteractive(FigureCanvas):
         self.point_selected = None
         self.new_shape = None
         self.points_appended = 0
+        self.dbl_click = False
 
         self.button_press_connection = self.mpl_connect("button_press_event", self.button_press_callback)
         self.motion_connection = self.mpl_connect('motion_notify_event', self.mouse_move_callback)
@@ -76,7 +77,7 @@ class CanvasInteractive(FigureCanvas):
     def detect_point(self, point, radius=0.015):
         x0, y0, x_range, y_range = self.detect_limits()
         std_point = self.standardize_point(point, [x0, y0], [x_range, y_range])
-        shape_ind = None
+        plot_ind = None
         point_ind = None
         for i in range(len(self.plots)):
             if self.plots_clickable[i]:
@@ -89,9 +90,9 @@ class CanvasInteractive(FigureCanvas):
                     if r < radius:
                         radius = r
                         point_ind = j
-                        shape_ind = i
+                        plot_ind = i
         self.point_selected = point_ind
-        self.plot_selected = shape_ind
+        self.plot_selected = plot_ind
 
     def detect_limits(self):
         left, right = self.ax.get_xlim()
@@ -205,23 +206,41 @@ class CanvasInteractive(FigureCanvas):
     def button_press_callback(self, event):
         ix, iy = event.xdata, event.ydata
         if event.dblclick and self.new_shape:
-            if self.points_appended == 0:
-                self.draw_point(ix, iy)
-                if self.new_shape == "point":
-                    self.complete_shape_addition()
-            elif self.points_appended == 1:
-                self.draw_point(ix, iy)
-                shape_is_line = self.new_shape == "line"
-                self.line_from_points(-2, -1, not shape_is_line)
-                if shape_is_line:
-                    self.complete_shape_addition()
+            if self.new_shape == "comp_cub_bezier":
+                self.dbl_click = True
+                if self.points_appended == 0:
+                    for i in range(2):
+                        self.draw_point(ix, iy)
+                    self.line_from_points(-2, -1, True)
+                    self.plot_selected = self.standardize_index(-1, self.plots)
+                    self.point_selected = 1
+                else:
+                    if self.points_appended == 2:
+                        for i in range(2):
+                            self.append_point_to_shape(-1, [ix, iy])
+                        self.spline_from_polyline(-1)
+                    else:
+                        self.append_point_to_shape(-1, [ix, iy])
+                    self.plot_selected = self.standardize_index(-2, self.plots)
+                    self.point_selected = self.standardize_index(-2, self.plots[-2].get_xdata())
+                self.pressed = True
             else:
-                self.append_point_to_shape(-1, [ix, iy])
-                if self.points_appended == 3 and (self.new_shape == "bezier" or self.new_shape == "comp_quad_bezier"):
-                    self.spline_from_polyline(-1)
-                if self.points_appended == 4 and self.new_shape == "comp_cub_bezier":
-                    self.spline_from_polyline(-1)
-        if event.button == 1:
+                if self.points_appended == 0:
+                    self.draw_point(ix, iy)
+                    if self.new_shape == "point":
+                        self.complete_shape_addition()
+                elif self.points_appended == 1:
+                    self.draw_point(ix, iy)
+                    shape_is_line = self.new_shape == "line"
+                    self.line_from_points(-2, -1, not shape_is_line)
+                    if shape_is_line:
+                        self.complete_shape_addition()
+                else:
+                    self.append_point_to_shape(-1, [ix, iy])
+                    if self.points_appended == 3 and \
+                            (self.new_shape == "bezier" or self.new_shape == "comp_quad_bezier"):
+                        self.spline_from_polyline(-1)
+        if event.button == 1 and not self.dbl_click:
             self.pressed = True
             self.detect_point([ix, iy])
             if self.point_selected is not None:
@@ -233,10 +252,13 @@ class CanvasInteractive(FigureCanvas):
     def mouse_move_callback(self, event):
 
         ix, iy = event.xdata, event.ydata
-
         if self.pressed and self.point_selected is not None:
             if ix is not None and iy is not None:
                 self.update_shape_point([ix, iy])
 
     def button_release_callback(self, event):
-        self.pressed = False
+        if self.dbl_click:
+            self.pressed = False
+            self.dbl_click = False
+        else:
+            self.pressed = False

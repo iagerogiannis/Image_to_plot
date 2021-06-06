@@ -1,5 +1,6 @@
 from GUI.Shapes.Splines.Spline import Spline
 from numerical_analysis.splines import *
+from numerical_analysis.dependencies import StraightLine
 
 
 class CompBezierShape(Spline):
@@ -49,3 +50,12 @@ class CompCubBezierShape(CompBezierShape):
 
     def __init__(self, parent, control_x, control_y, color_cp, color_graph, plot_style_cp="o-", plot_style_graph="-"):
         super().__init__(parent, control_x, control_y, 3, color_cp, color_graph, plot_style_cp, plot_style_graph)
+
+    def append_point(self, point):
+        line = StraightLine([[-1, [self.x_coords[-2], self.y_coords[-2]]], [0, [self.x_coords[-1], self.y_coords[-1]]]])
+        new_point = line.point_t(1)
+        self.x_coords.append(new_point[0])
+        self.y_coords.append(new_point[1])
+        self.x_coords.append(point[0])
+        self.y_coords.append(point[1])
+        super().append_point(point)
