@@ -1,3 +1,5 @@
+import numpy as np
+import pandas as pd
 from GUI.Shapes.Splines.Spline import Spline
 from numerical_analysis.splines import *
 from numerical_analysis.dependencies import StraightLine

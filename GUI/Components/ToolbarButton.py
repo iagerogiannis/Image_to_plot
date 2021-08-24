@@ -17,8 +17,8 @@ class ToolbarButton(QPushButton):
             self.clicked.connect(self.triggered_function)
         if image_fname:
             self.image_fname = image_fname
-            image_default_path = r"{}\icons\default\{}".format(os.getcwd(), self.image_fname).replace("\\", "/")
-            image_hover_path = r"{}\icons\hover\{}".format(os.getcwd(), self.image_fname).replace("\\", "/")
+            image_default_path = r"{}\icons\toolbar_buttons\default\{}".format(os.getcwd(), self.image_fname).replace("\\", "/")
+            image_hover_path = r"{}\icons\toolbar_buttons\hover\{}".format(os.getcwd(), self.image_fname).replace("\\", "/")
             self.setStyleSheet("""
             QPushButton {{
                 background-image: url("{}");

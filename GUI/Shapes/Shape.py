@@ -1,3 +1,6 @@
+import pandas as pd
+
+
 class Shape:
 
     def __init__(self, parent, x_coords, y_coords, color, plot_style="o-"):
@@ -14,3 +17,6 @@ class Shape:
     def append_point(self, point):
         self.x_coords.append(point[0])
         self.y_coords.append(point[1])
+
+    def export(self, divisions=200, dx=True):
+        return {"graph": pd.DataFrame({"X": self.x_coords, "Y": self.y_coords})}

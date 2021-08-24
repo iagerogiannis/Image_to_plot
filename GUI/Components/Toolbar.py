@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QVBoxLayout, QWidget, QFileDialog, QFrame
 from PyQt5.QtCore import Qt
 
-from GUI.ToolbarButton import ToolbarButton
+from GUI.Components.ToolbarButton import ToolbarButton
 
 
 class Toolbar(QWidget):
@@ -10,9 +10,9 @@ class Toolbar(QWidget):
         super().__init__()
         self.parent = parent
 
-        self.buttons = [ToolbarButton(self, "LI", self.handle_load_image, "import.png", "Import Image"),
-                        ToolbarButton(self, "EF", self.handle_load_image, "export.png", "Export Data"),
-                        ToolbarButton(self, "AA", self.handle_draw_point, "axis.png", "Set Axis System"),
+        self.buttons = [ToolbarButton(self, "LI", self.handle_load_image, "import.png", "Load Image"),
+                        ToolbarButton(self, "ED", self.handle_export_data, "export.png", "Export Data"),
+                        ToolbarButton(self, "AS", self.handle_set_axis_system, "axis.png", "Set Axis System"),
                         ToolbarButton(self, "DP", self.handle_draw_point, "point.png", "Draw Point"),
                         ToolbarButton(self, "DL", self.handle_draw_line, "line.png", "Draw Line"),
                         ToolbarButton(self, "DPL", self.handle_draw_polyline, "polyline.png", "Draw Polyline"),
@@ -57,6 +57,14 @@ class Toolbar(QWidget):
         if filename:
             self.parent.canvas.load_image(filename[0])
             self.parent.canvas.draw()
+
+    def handle_export_data(self):
+        export_data = self.parent.parent.call_export_pop_up()
+        if export_data:
+            self.parent.canvas.export(export_data)
+
+    def handle_set_axis_system(self):
+        self.parent.canvas.set_axis_system()
 
     def handle_draw_point(self):
         self.parent.canvas.draw_shape("point")

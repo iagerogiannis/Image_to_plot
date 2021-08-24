@@ -2,21 +2,22 @@ from PyQt5.QtWidgets import QHBoxLayout, QWidget
 from PyQt5.QtCore import Qt
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 
-
-from GUI.WidgetContainer import *
-from GUI.Toolbar import Toolbar
-from GUI.CanvasInteractive import CanvasInteractive
-from GUI.ShapesTree import ShapesTree
+from GUI.Components.WidgetContainer import *
+from GUI.Components.Toolbar import Toolbar
+from GUI.Components.CanvasInteractive import CanvasInteractive
+from GUI.Components.ShapesTree import ShapesTree
 
 
 class Workspace(QWidget):
 
-    def __init__(self, parent=None):
+    def __init__(self, parent):
         super().__init__(parent)
+        self.parent = parent
+
         self.pan_active = False
         self.zoom_active = False
 
-        self.canvas = CanvasInteractive()
+        self.canvas = CanvasInteractive(self)
         self.w_canvas = CanvasContainer(self, self.canvas)
 
         self.canvasToolbar = NavigationToolbar(self.canvas, self)
@@ -31,8 +32,8 @@ class Workspace(QWidget):
 
         self.workspace_layout = QHBoxLayout()
         self.workspace_layout.addWidget(self.customToolbar, 1)
-        self.workspace_layout.addWidget(self.w_canvas, 75)
-        self.workspace_layout.addWidget(self.w_shapes_tree, 25)
+        self.workspace_layout.addWidget(self.w_canvas, 80)
+        self.workspace_layout.addWidget(self.w_shapes_tree, 20)
 
         self.layout = QVBoxLayout()
         self.layout.addWidget(self.canvasToolbar)
@@ -65,6 +66,10 @@ class Workspace(QWidget):
             self.zoom_active = True
         self.handle_connection()
 
+    def shape_added_callback(self, shape, axis_data=None):
+        unique_ids = self.shapes_tree.append_shape(shape, axis_data)
+        return unique_ids
+
     def home_callback(self):
         self.canvas.draw()
 
@@ -75,3 +80,6 @@ class Workspace(QWidget):
     def keyReleaseEvent(self, event):
         if event.key() == Qt.Key_Shift:
             self.canvas.unset_tangent()
+
+    def trigger_home(self):
+        self.canvasToolbar.actions()[0].trigger()
