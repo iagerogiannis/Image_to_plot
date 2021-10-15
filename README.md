@@ -12,7 +12,7 @@ the Toolbar (used for navigation in Canvas), the Custom Toolbar (which consists 
   <img src="readme_images/ImageToPlot_1.png">
 </p>
 
-The user can add splines with infinite number of Control Points, from which he can control it.
+The user can add splines with the desired number of Control Points, from which he can control it.
 
 <p align="center">
   <img src="readme_images/ImageToPlot_2.png">
